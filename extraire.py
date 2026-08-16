@@ -63,6 +63,8 @@ COLONNES = [
 
 lignes = []
 echecs = []
+vues = set()
+doublons = []
 
 for fichier in DOSSIER.glob("*.pdf"):
     print(f"Traitement de {fichier.name}...")
@@ -72,7 +74,18 @@ for fichier in DOSSIER.glob("*.pdf"):
             raise ValueError("PDF sans texte extractible (scanné ?)")
         donnees = analyser(texte)
         donnees["fichier"] = fichier.name
+        fournisseur = (donnees.get("fournisseur") or "").strip().upper()
+        numero = (donnees.get("numero_facture") or "").strip().upper()
+        cle = (fournisseur, numero)
+        
+        if cle in vues:
+            print(f"  DOUBLON ignoré")
+            doublons.append(fichier.name)
+            continue
+
+        vues.add(cle)
         lignes.append(donnees)
+
     except Exception as erreur:
         print(f"  ÉCHEC : {erreur}")
         echecs.append((fichier.name, str(erreur)))
@@ -82,7 +95,7 @@ with open("resultat.csv", "w", newline="", encoding="utf-8") as f:
     writer.writeheader()
     writer.writerows(lignes)
 
-print(f"\n{len(lignes)} factures traitées, {len(echecs)} échecs")
+print(f"\n{len(lignes)} factures traitées, {len(doublons)} doublons, {len(echecs)} échecs")
 
 if echecs:
     print("\nFichiers en échec :")
