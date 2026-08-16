@@ -62,17 +62,33 @@ COLONNES = [
 ]
 
 lignes = []
+echecs = []
 
 for fichier in DOSSIER.glob("*.pdf"):
     print(f"Traitement de {fichier.name}...")
-    texte = extraire_texte(fichier)
-    donnees = analyser(texte)
-    donnees["fichier"] = fichier.name
-    lignes.append(donnees)
+    try:
+        texte = extraire_texte(fichier)
+        if len(texte.strip()) < 50:
+            raise ValueError("PDF sans texte extractible (scanné ?)")
+        donnees = analyser(texte)
+        donnees["fichier"] = fichier.name
+        lignes.append(donnees)
+    except Exception as erreur:
+        print(f"  ÉCHEC : {erreur}")
+        echecs.append((fichier.name, str(erreur)))
 
 with open("resultat.csv", "w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=COLONNES, delimiter=";")
     writer.writeheader()
     writer.writerows(lignes)
 
-print(f"{len(lignes)} factures écrites dans resultat.csv")
+print(f"\n{len(lignes)} factures traitées, {len(echecs)} échecs")
+
+if echecs:
+    print("\nFichiers en échec :")
+    for nom, erreur in echecs:
+        print(f"  - {nom} : {erreur}")
+
+    with open("echecs.txt", "w", encoding="utf-8") as f:
+        for nom, erreur in echecs:
+            f.write(f"{nom} : {erreur}\n")

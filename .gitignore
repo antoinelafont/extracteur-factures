@@ -1,3 +1,4 @@
 .env
 factures/
 .DS_Store
+echecs.txt
